@@ -9,46 +9,69 @@ class LogInView extends GetView<LogInController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('LogInView'), centerTitle: true),
+      appBar: AppBar(title: const Text('Login'), centerTitle: true),
       body: SafeArea(
-        child: Column(
-          children: [
-            TextField(
-              controller: controller.email,
-              decoration: InputDecoration(hint: Text("Enter your Email")),
-            ),
-            TextField(
-              controller: controller.password,
-              decoration: InputDecoration(hint: Text("Enter your Password")),
-            ),
-            SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                controller.logIn();
-              },
-              child: Text("Log In"),
-            ),
-            SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                Get.toNamed(Routes.SIGN_UP);
-              },
-              child: Text(
-                "Sign Up",
-                style: TextStyle(color: Colors.blueAccent, fontSize: 20),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            children: [
+              TextField(
+                controller: controller.email,
+                decoration: const InputDecoration(
+                  labelText: "Email",
+                  hintText: "Enter your email",
+                  border: OutlineInputBorder(),
+                ),
               ),
-            ),
-            SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                controller.logOut();
-              },
-              child: Text(
-                "Log Out",
-                style: TextStyle(color: Colors.blueAccent, fontSize: 20),
+              const SizedBox(height: 16),
+              Obx(
+                () => TextField(
+                  controller: controller.password,
+                  obscureText: !controller.isPasswordVisible.value,
+                  decoration: InputDecoration(
+                    labelText: "Password",
+                    hintText: "Enter your password",
+                    border: const OutlineInputBorder(),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        controller.isPasswordVisible.value
+                            ? Icons.visibility
+                            : Icons.visibility_off,
+                      ),
+                      onPressed: () => controller.isPasswordVisible.toggle(),
+                    ),
+                  ),
+                ),
               ),
-            ),
-          ],
+              const SizedBox(height: 24),
+              Obx(
+                () => SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: controller.isLoading.value
+                        ? null
+                        : controller.logIn,
+                    child: controller.isLoading.value
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Text("Log In"),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextButton(
+                onPressed: () => Get.toNamed(Routes.SIGN_UP),
+                child: const Text("Don't have an account? Sign Up"),
+              ),
+            ],
+          ),
         ),
       ),
     );
