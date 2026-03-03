@@ -26,28 +26,54 @@ class SignUpController extends GetxController {
   final firestore = FirebaseFirestore.instance;
 
   Future<void> signUp() async {
-    if (email.text.isEmpty ||
-        password.text.isEmpty ||
-        name.text.isEmpty ||
-        lastName.text.isEmpty ||
-        phone.text.isEmpty ||
-        address.text.isEmpty ||
-        pinCode.text.isEmpty) {
-      Get.snackbar("Error", "Please fill all fields");
+    log("Sign-up attempt started...");
+
+    // Check for empty fields
+    if (email.text.trim().isEmpty ||
+        password.text.trim().isEmpty ||
+        name.text.trim().isEmpty ||
+        lastName.text.trim().isEmpty ||
+        phone.text.trim().isEmpty ||
+        address.text.trim().isEmpty ||
+        pinCode.text.trim().isEmpty) {
+      log(
+        "A field is empty - email: ${email.text.isEmpty}, password: ${password.text.isEmpty}, name: ${name.text.isEmpty}",
+      );
+      Get.snackbar(
+        "Required",
+        "All fields must be filled to create an account",
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.redAccent,
+        colorText: Colors.white,
+      );
       return;
     }
+
     if (password.text != confirmPassword.text) {
-      Get.snackbar("Error", "Passwords do not match");
+      log("Passwords do not match");
+      Get.snackbar(
+        "Error",
+        "Passwords do not match",
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.redAccent,
+        colorText: Colors.white,
+      );
       return;
     }
+
     isLoading.value = true;
     try {
+      log("Creating user in Auth: ${email.text.trim()}");
       final result = await auth.createUserWithEmailAndPassword(
         email: email.text.trim(),
         password: password.text.trim(),
       );
 
-      if (result.user?.uid != null) {
+      final uid = result.user?.uid;
+      log("User created successfully, uid: $uid");
+
+      if (uid != null) {
+        log("Saving user data to Firestore...");
         final userModel = UserModel(
           name: name.text.trim(),
           lastName: lastName.text.trim(),
@@ -58,17 +84,39 @@ class SignUpController extends GetxController {
           isProvider: isProvider.value,
         );
 
-        await firestore
-            .collection("Users")
-            .doc(result.user!.uid)
-            .set(userModel.toJson());
-        Get.offAllNamed(Routes.HOME);
+        await firestore.collection("Users").doc(uid).set(userModel.toJson());
+        log("UserData saved successfully to collection 'Users'");
+
+        Get.offAllNamed(Routes.LOG_IN);
+        Get.snackbar(
+          "Welcome!",
+          "Your account has been created. Please log in.",
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+        );
       }
+    } on FirebaseAuthException catch (e) {
+      log("FirebaseAuthException - sign up: ${e.code} - ${e.message}");
+      Get.snackbar(
+        "Auth Error",
+        e.message ?? "Registration failed",
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.redAccent,
+        colorText: Colors.white,
+      );
     } catch (e) {
-      log(e.toString());
-      Get.snackbar("Error", e.toString());
+      log("Sign up general error: $e");
+      Get.snackbar(
+        "Wait",
+        "Could not complete registration. Error: ${e.toString()}",
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.redAccent,
+        colorText: Colors.white,
+      );
     } finally {
       isLoading.value = false;
+      log("Sign-up attempt finished.");
     }
   }
 }

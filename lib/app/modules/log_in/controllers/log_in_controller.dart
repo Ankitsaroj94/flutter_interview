@@ -16,36 +16,71 @@ class LogInController extends GetxController {
   final firestore = FirebaseFirestore.instance;
 
   Future<void> logIn() async {
-    if (email.text.isEmpty || password.text.isEmpty) {
-      Get.snackbar("Error", "Please fill all fields");
+    log("Login attempt started...");
+    if (email.text.trim().isEmpty || password.text.trim().isEmpty) {
+      log("Email or password empty");
+      Get.snackbar(
+        "Error",
+        "Please fill all fields",
+        snackPosition: SnackPosition.BOTTOM,
+      );
       return;
     }
+
     isLoading.value = true;
     try {
+      log("Signing in with Firebase: ${email.text.trim()}");
       final result = await auth.signInWithEmailAndPassword(
-        email: email.text,
-        password: password.text,
+        email: email.text.trim(),
+        password: password.text.trim(),
       );
+
       final uid = result.user?.uid;
+      log("Sign in successful, uid: $uid");
+
       if (uid == null) {
-        Get.snackbar("Error", "Login failed");
+        log("UID is null after login");
+        Get.snackbar(
+          "Error",
+          "Login failed: No user ID returned",
+          snackPosition: SnackPosition.BOTTOM,
+        );
         return;
       }
+
+      log("Fetching user data from Firestore...");
       final data = await firestore.collection("Users").doc(uid).get();
+      log("Firestore document exists: ${data.exists}");
+
       if (!data.exists) {
+        log("Redirecting to profile completion...");
         Get.offAllNamed(Routes.COLLECT_USER_DETAILS);
       } else {
-        Get.offAllNamed(Routes.HOME);
+        log("Redirecting to profile...");
+        Get.offAllNamed(Routes.PROFILE);
       }
+    } on FirebaseAuthException catch (e) {
+      log("FirebaseAuthException: ${e.code} - ${e.message}");
+      Get.snackbar(
+        "Auth Error",
+        e.message ?? "Authentication failed",
+        snackPosition: SnackPosition.BOTTOM,
+      );
     } catch (e) {
-      log(e.toString());
-      Get.snackbar("Error", e.toString());
+      log("Login general error: $e");
+      Get.snackbar(
+        "Error",
+        "An unexpected error occurred: ${e.toString()}",
+        snackPosition: SnackPosition.BOTTOM,
+      );
     } finally {
       isLoading.value = false;
+      log("Login attempt finished.");
     }
   }
 
   Future<void> logOut() async {
+    log("Logging out...");
     await auth.signOut();
     Get.offAllNamed(Routes.LOG_IN);
   }
